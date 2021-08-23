@@ -1,0 +1,20 @@
+{
+    "channel": [
+      {
+        "name": "EXT.CONN",
+        "clientConnection": {
+          "connection": [
+            {
+              "host": "<mq-host-url>",
+              "port": 443
+            }
+          ],
+          "queueManager": "QUICKSTART"
+        },
+        "transmissionSecurity": {
+          "cipherSpecification": "ANY_TLS12"
+        },
+        "type": "clientConnection"
+      }
+    ]
+  }
