@@ -5,7 +5,7 @@
         "clientConnection": {
           "connection": [
             {
-              "host": "<mq-host-url>",
+              "host": "<your-host-url>",
               "port": 443
             }
           ],

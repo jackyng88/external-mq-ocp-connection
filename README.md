@@ -258,3 +258,155 @@ message <1234>
 
 
 ## Connecting a Golang Application to IBM MQ
+- First we need to set a few environment variables. Run the following and replace with your values. **NOTE**: The `CONNECTION` env variable needs to be ended/suffixed with `(443)` as that's the port for the OpenShift Route.
+
+```
+export QUEUE_MANAGER=QUICKSTART \
+export QUEUE=IN \
+export CHANNEL=EXT.CONN \
+export CONNECTION_URL=<your-ocp-route-url>(443) \
+export KEY_PATH=<path-to-clientkey>/clientkey
+```
+
+- Now that we have these environment variables set let's create a basic put program. Create the Go file.
+```
+touch mqtlsput.go
+```
+
+- Paste the following.
+```go
+package main
+
+import (
+	"os"
+	"strings"
+	"fmt"	
+	"time"
+	"encoding/hex"
+
+	"github.com/ibm-messaging/mq-golang/v5/ibmmq"
+)
+
+func main() {
+
+	var qMgrName string
+	var qName string
+	var err error
+	var qMgr ibmmq.MQQueueManager
+	var rc int
+	var qObject ibmmq.MQObject
+
+	cno := ibmmq.NewMQCNO()
+	sco := ibmmq.NewMQSCO()
+	cd := ibmmq.NewMQCD()
+
+	qMgrName = os.Getenv("QUEUE_MANAGER")
+	qName = os.Getenv("QUEUE")
+	cd.ChannelName = os.Getenv("CHANNEL")
+	cd.ConnectionName = os.Getenv("CONNECTION_URL")
+	sco.KeyRepository = os.Getenv("KEY_PATH")
+
+	cd.SSLCipherSpec = "TLS_RSA_WITH_AES_128_CBC_SHA256"
+	cd.SSLClientAuth = ibmmq.MQSCA_OPTIONAL
+
+	cno.ClientConn = cd
+	cno.Options = ibmmq.MQCNO_CLIENT_BINDING
+	cno.SSLConfig = sco
+
+	// Establish a connection
+	qMgr, err = ibmmq.Connx(qMgrName, cno)
+	// Connection successful
+	if err == nil {
+		fmt.Printf("Connection to %s succeeded.\n", qMgrName)
+		rc = 0
+	}
+
+	// Open the Queue
+	if err == nil {
+		mqod := ibmmq.NewMQOD()
+		openOptions := ibmmq.MQOO_OUTPUT
+
+		mqod.ObjectType = ibmmq.MQOT_Q
+		mqod.ObjectName = qName
+
+		qObject, err = qMgr.Open(mqod, openOptions)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println("Opened queue", qObject.Name)
+		}
+	}
+
+	// PUT a message to the queue
+	if err == nil {
+	
+		putmqmd := ibmmq.NewMQMD()
+		pmo := ibmmq.NewMQPMO()
+
+		pmo.Options = ibmmq.MQPMO_NO_SYNCPOINT
+		putmqmd.Format = ibmmq.MQFMT_STRING
+
+		msgData := "Hello from Go at " + time.Now().Format(time.RFC3339)
+
+		buffer := []byte(msgData)
+
+		err = qObject.Put(putmqmd, pmo, buffer)
+
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println("Put message to", strings.TrimSpace(qObject.Name))
+			fmt.Println("MsgId: " + hex.EncodeToString(putmqmd.MsgId))
+		}
+	}
+
+	if err != nil {
+		fmt.Printf("Connection to %s failed.\n", qMgrName)
+		fmt.Println(err)
+		rc = int(err.(*ibmmq.MQReturn).MQCC)
+	}
+
+	fmt.Println("Done.")
+	qObject.Close(0)
+	qMgr.Disc()
+	os.Exit(rc)
+
+}
+```
+
+- Also depending on your version of Go you're using and how you're handling GOPATH, you may or may not choose to use a `go.mod` file.
+```
+touch go.mod
+```
+
+```go
+module golang-mq
+
+go 1.11
+
+require github.com/ibm-messaging/mq-golang/v5 v5.0.0
+
+```
+
+- You can run the PUT with the following.
+```
+go run mqtlsput.go
+```
+
+- You should see something similar to the below if the connection was successful as well as the PUT action.
+```
+Connection to QUICKSTART succeeded.
+Opened queue IN
+Put message to INMsgId: 414d5120515549434b535441525420206ce3236101d30540
+Done.
+```
+
+- Now let's create a simple GET Go program to replicate and see what items we have previously PUT into the Queue.
+```
+touch mqtlsget.go
+```
+
+- Paste the following.
+```go
+
+```
