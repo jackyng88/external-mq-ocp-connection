@@ -96,5 +96,4 @@ func putMessage(qMgrObject ibmmq.MQQueueManager) {
 		fmt.Println("Put message into", strings.TrimSpace(qObject.Name))
 		fmt.Println("MsgId: " + hex.EncodeToString(putmqmd.MsgId))
 	}
-	
 }
