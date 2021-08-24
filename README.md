@@ -193,7 +193,7 @@ oc get secret platform-auth-idp-credentials -n ibm-common-services -o=jsonpath='
 ```
 - You can get the admin username but by default it is just `admin`. But you can form it like so.
 ```
-oc get secret platform-auth-idp-credentials -n ibm-common-services -o=jsonpath='{.data.admin_password}' | base64 -d
+oc get secret platform-auth-idp-credentials -n ibm-common-services -o=jsonpath='{.data.admin_username}' | base64 -d
 ```
 
 - Through the IBM MQ web console you can generate a connection file or you can create the necessary file like so.
